@@ -1,0 +1,129 @@
+---
+title: "Week 2 - Bike Sales Analysis | Summaries"
+student ID: 2001292765
+author: "Oluwatosin Agbaakin"
+date: "2024-01-20"
+output: html_document
+theme: cerulean
+---
+<style>
+p {
+  text-align: justify;
+}
+</style>
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(skimr)
+```
+
+## Loading and Summarizing the Data:
+
+First, I loaded the CSV data into a tibble called `bikes`.
+
+```{r}
+bikes <- read_csv("bike_data.csv")
+```
+
+Then, I used the `skim()` function to summarize the numeric and categorical variables:
+
+```{r}
+skim(bikes)
+```
+
+## The key insights from the skim:
+
+-   Most numeric variables like Income has a right-skewed distribution instead of normal distribution.
+-   The group that purchased bikes tends to have higher income.
+-   Age is approximately normal distributed with mean 48 years old.
+
+## A numeric summary - Gender and Number of Children:
+
+```{r}
+bikes %>%
+  mutate(Children = as.numeric(Children)) %>%
+  reframe(
+    gender_n = n_distinct(Gender),
+    gender_counts = table(Gender),
+    children_n = n_distinct(Children),
+    children_total = sum(Children)
+  )
+```
+
+This shows the counts for the two categorical variables.
+
+**Data Documentation Insights**
+
+-   The data tracks customer demographics (age, income, number of children, education level etc) along with bike purchase history. This suggests the goal is to understand the target customer base.
+
+-   It includes detailed segmentation data - region, commute distance ranges, and occupation categories. This indicates a desire to precisely understand behavioral differences in subgroups.
+
+-   Unique IDs are provided for each customer, which shows the data could be appended or merged with additional customer data from other systems, like service history or web analytics.
+
+-   No direct marketing costs or channel details are included. To calculate ROI, connecting purchase events back to marketing touchpoints would be valuable.
+
+**Project Goals**
+
+-   The data documentation shows this data was collected to analyze bike purchasing decisions. We could look at how family status impacts likelihood to purchase.
+
+-   As noted above, a core goal seems to be understanding the target customer base and aligning product offerings appropriately. Find actionable customer sub-segments.
+
+-   Key differentiator variables like occupation and commute distance suggest a desire to tailor messaging and products to consumer needs. Support customization.
+
+-   Inclusion of extensive demographics indicates potential interest in propensity modeling - predicting purchase probability per segment. Prioritize high-probability targets.
+
+## Questions for Further Analysis:
+
+Based on the initial overview, here are some questions to investigate further:
+
+-   What factors predict whether someone purchases a bike? Income seems correlated but are there other predictors like occupation?
+
+-   Does bike purchasing behavior differ by region? The data has customers in Europe, North America, and the Pacific.
+
+-   Is age correlated with income level? Since age is approximately normally distributed, then we can investigate this.
+
+## Using Aggregation to Summarize Data:
+
+I used aggregation to find the average income by occupation:
+
+```{r}
+bikes %>%
+  group_by(Occupation) %>%
+  summarize(avg_income = mean(as.numeric(gsub("[$|,]", "", Income))))
+```
+
+The management occupation has the highest average income by a significant margin. Professionals and skilled manuals also have higher incomes on average.
+
+## Visualizations:
+
+First, I plotted income distribution by bike purchase:
+
+```{r}
+bikes %>% 
+  mutate(Income = as.numeric(gsub("[$|,]", "", Income))) %>%
+  ggplot(aes(Income, fill = `Purchased Bike`)) +
+  geom_density(alpha = 0.5)
+```
+
+We can see those who purchased bikes have higher incomes on average. Next, I plotted age brackets versus average income:
+
+```{r}
+bikes %>%
+ mutate(Income = as.numeric(gsub("[$|,]", "", Income))) %>%
+ group_by(`Age Brackets`) %>%
+ summarize(avg_income = mean(Income)) %>%
+ ggplot(aes(`Age Brackets`, avg_income, color = `Age Brackets`)) +
+ geom_col()
+```
+
+This shows income tends to increase up through middle age then declines in retirement ages.
+
+There are still many additional relationships to analyze in this data - occupation types, regions, commute distance and other factors that may influence bike purchasing. But this initial analysis has provided me with some useful insights.
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:

@@ -1,0 +1,250 @@
+---
+title: "Bike Data Analysis -  Week 7|Hypothesis Testing"
+author: "Oluwatosin Agbaakin"
+date: "2024-02-21"
+output: html_document
+theme: cerulean
+---
+<style>
+p {
+  text-align: justify;
+}
+</style>
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction to the Data Dive:
+
+This week's data dive is focused on exploring the bike sales dataset on hypothesis testing, after having explored this particular dataset over the past few weeks; sometimes I come to a halt, confused and lost in my analysis process. I came across various questions that I could not answer instantly, however, I will try to address some of these questions in this week's data dive.
+
+So, this week's data dive will analyze the dataset around the following topics as discussed this week:
+
+-   Empiricism vs. Rationalism
+-   Hypothesis Testing Paradigms
+-   Null Hypothesis
+-   Type I vs. Type II Error
+-   p-value
+-   AB Testing
+
+As required, I devised at least two different null hypotheses based on two different aspects (e.g., columns) of my data, and for each hypothesis, I also came up with an alpha level, power level, and minimum effect size, and I explained why I chose each value.
+
+I proceeded to determine if I have enough data to perform a Neyman-Pearson hypothesis test, I calculated my sample size calculation, performed the test, and interpreted the results. I also performed a Fisher's style test for significance on the same hypothesis, and interpreted the p-value. At the end, I had two hypothesis tests for each hypothesis, equating two four total tests.
+
+And finally, I built two visualizations that best illustrate my results, one for each null hypothesis, and also explained the insights and made my recommendations. As required for each tasks, I described all the insights that was gathered, its significance, and every other questions that I have which might need to be further investigated in subsequent data dive.
+
+### **Exploring the Dataset:**
+
+Before we can generate the hypotheses, it's crucial to understand the dataset structure, variables, and potential relationships within the bike sales dataset. I started by loading the dataset and performing an initial exploration.
+
+```{r}
+library(tidyverse)
+bike_data <- read_csv("bike_data.csv", show_col_types = FALSE)
+head(bike_data)
+summary(bike_data)
+sum(is.na(bike_data))
+
+# Exploring my distribution of key variables
+  ggplot(bike_data, aes(x = Age)) + 
+  geom_bar() 
+
+ggplot(bike_data, aes(x = Income)) + 
+  geom_bar() 
+
+hist(bike_data$Age)
+hist(bike_data$Income)
+# Correlation between variables if at all applicable
+cor(bike_data$Age, bike_data$Income) 
+```
+
+## Observations after Exploring my dataset:
+
+### Age Distribution Histograms
+
+Both age distribution histograms show a similar pattern where the majority of the data points are concentrated around the middle age range, with fewer counts as age increases or decreases, indicating a roughly bell-shaped distribution. The first histogram appears to have multiple peaks which suggest the presence of different age groups or cohorts with higher frequencies.
+
+#### Insights:
+
+-   The distribution is approximately normal, but with some irregularities that might suggest multiple modes.
+
+-   There is a sharp drop in counts past the age of around 60, which may indicate less bike usage or fewer members in that age range.
+
+### Income Distribution Histograms
+
+The income distribution histograms display a right-skewed distribution, indicating that a majority of the individuals have an income in the lower to middle range, with very few high-income earners.
+
+#### Insights:
+
+-   The distribution of income is not normal as it is skewed to the right.
+
+-   There are significantly fewer individuals with high incomes.
+
+### **Hypothesis Formulation**
+
+Based on the exploration of the dataset and what we can see from the visualizations above, here are two null hypotheses we can test in this data dive to fulfill the requirementrs of this assignment:
+
+#### Hypothesis 1: Age and Bike Sold
+
+**Null Hypothesis (H0):** There is no significant difference in bike sale frequency across different age groups. For this hypothesis, I would need to have a dataset where bike sale frequency is recorded alongside age.
+
+**Alpha level:** 0.05, this is a standard operation that I will use to determine the significance.
+
+**Power level:** 0.80, I will use this to ensure we have a good balance between Type I and Type II error rates.
+
+**Minimum effect size:** This would be based on what difference in bike sale would be considered meaningful. For the purpose of this hypothesis, I will use an assumption that a difference of 50 bikes is significant for our analysis.
+
+```{r}
+# Assuming my dataset has a variable 'Bike Sold' for the number of bikes sold.
+age_groups <- cut(bike_data$Age, breaks = c(0, 30, 60, 90), include.lowest = TRUE, right = FALSE)
+age_sales_anova <- aov(`Bike Sold` ~ age_groups, data = bike_data)
+summary(age_sales_anova)
+```
+
+**Key Insights**
+
+1.   **Statistical Significance:** The p-value of 0.000404 is less than the common significance level of 0.05. This means the result is statistically significant. I reject the null hypothesis that there's no difference in bike sales across different age groups.
+
+2.   **Effect of Age:** The ANOVA suggests that a person's age group has a significant effect on the likelihood of purchasing a bike.
+
+3.   **Unexplained Variation:** While age is important, a large portion of the variation in bike sales is still unexplained, as seen in the Residuals row. Other factors might also influence bike purchasing decisions.
+
+In conclusion for this first hypothesis, we can see that ANOVA tells us there is a difference, but it does not tell us the direction of that difference in this hypothesis test.
+
+#### Hypothesis 2: Income Level and Bike Sales
+
+**Null Hypothesis (H0):** Bike sales are independent of the customer's income level.
+
+**Alpha level:** 0.05, to maintain consistency.
+
+**Power level:** 0.80, to ensure that the hypothesis test is robustness.
+
+**Minimum effect size:** Assume a difference of 50 bikes sold is also significant for income level analysis.
+
+```{r}
+# Assuming my dataset has a variable 'Bike_Sold' for the number of bikes sold.
+income_groups <- cut(bike_data$Income, breaks = c(0, 50000, 100000, 150000, Inf), include.lowest = TRUE, right = FALSE)
+income_sales_anova <- aov(`Bike Sold` ~ income_groups, data = bike_data) 
+summary(income_sales_anova)
+```
+
+**Key Insights**
+
+1.   **No Statistical Significance:** The p-value of 0.425 is greater than the typical significance level of 0.05. This means that I fail to reject the null hypothesis. There is not enough evidence to conclude that there is a statistically significant difference in bike sales across different income groups.
+
+2.  **Unexplained Variation:** Most of the variation in bike sales remains unexplained by income, as seen in the large Sum of Squares for Residuals. This suggests that other factors are likely more important in determining bike purchases.
+
+Now let me elaborate on the limitations of ANOVA for this particular scenario. As mentioned earlier, it only tells us if there is a difference, not the nature of that difference. So, that moves us to the next question, I would be doing more further analysis to explore if there are any trends at all within different income groups, before I end it with some visualizations.
+
+Furthermore, there are obviously other potential factors that are likely other factors playing a larger role in influencing bike purchases, e.g weather, lifestyle, location (urban vs. rural), interest in cycling, etc.
+
+### **Sample Size and Power Analysis for Neyman-Pearson Hypothesis Test:**
+
+To determine if I have enough data, I will be using a power analysis tool like **`pwr`**. Now, let us use the following code snippet which will show how to calculate the necessary sample size for each group to achieve the desired power level.
+
+```{r}
+library(pwr)
+# Hypothesis 1: Comparing two groups' means
+effect_size <- 0.5 
+pwr_result <- pwr.t.test(d = effect_size, power = 0.80, sig.level = 0.05, type = "two.sample")
+
+pwr_result
+```
+
+Typically, it is known that if the calculated required sample size is less than or equal to the size of the data that I have, then I have enough data. If it is more, then I do not have enough data.
+
+So, to have a good chance (80% power) of detecting a medium-sized difference (effect size of 0.5) between the means of two groups, with a significance level of 0.05, I will need a sample size of approximately 64 participants per group.
+
+### **Fisher's Style Test for Significance:**
+
+Using this approach is just another slightly different philosophical approach to hypothesis testing, we use it when we do not pre-specify an alpha level but instead interpret the p-value directly. The step and code to perform the test is the same as the Neyman-Pearson test.
+
+However, the interpretation focuses more on the p-value obtained and what it suggests about the evidence against the null hypothesis without a strict cutoff for significance.
+
+### **Interpretation of the p-value:**
+
+The p-value is the probability of observing data at least as extreme as what was observed if the null hypothesis were true. A low p-value (typically below 0.05) indicates that such an extreme observed result would be very unlikely under the null hypothesis, thus providing evidence against the null hypothesis.
+
+### **Visualization of Results:**
+
+#### Visualization for Hypothesis 1
+
+```{r}
+library(ggplot2)
+ggplot(bike_data, aes(x = age_groups, y = `Bike Sold`)) + 
+    geom_bar(stat = "identity") + 
+    labs(title = "Number of Bikes Sold by Age Group", x = "Age Group", y = "Bikes Sold")
+```
+
+### **Number of Bikes Sold by Age Group:**
+
+This chart illustrates the number of bikes sold in three different age groups: [0, 30], [30, 60], and [60, 90].
+
+**Observations:**
+
+-   The [30, 60] age group shows the highest number of bikes sold, which is substantially more than the other age groups.
+
+-   The youngest age group [0, 30] has significantly fewer sales compared to the [30, 60] age group but more than the [60, 90] group.
+
+-   The oldest age group [60, 90] has the fewest sales, which are markedly lower than the other groups.
+
+This could indicate that the middle-aged group is the primary market for bike sales, possibly due to a combination of disposable income and lifestyle choices that include fitness or environmentally friendly transportation options. The lower sales in the youngest age group might reflect financial constraints or alternative preferences for transportation or recreation. The decrease in the oldest age group could be related to reduced mobility or a different set of recreational preferences.
+
+#### Visualization for Hypothesis 2
+
+```{r}
+ library(ggplot2)
+
+# Assuming your data is in a dataframe called 'bike_data' and it has columns 'Income' and 'bikes_sold'
+
+# Create a new factor variable in the dataframe with readable income level labels
+bike_data$income_groups <- cut(bike_data$Income, 
+                               breaks = c(0, 5e+04, 1e+05, 1.5e+05, Inf), 
+                               labels = c("0-50K", "50K-100K", "100K-150K", "150K+"), 
+                               include.lowest = TRUE, right = FALSE)
+
+ggplot(bike_data, aes(x = income_groups, y = `Bike Sold`)) + 
+    geom_col(fill = "steelblue") + 
+    labs(title = "Number of Bikes Sold by Income Level", 
+         x = "Income Level", 
+         y = "Bikes Sold") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))  
+```
+
+### **Number of Bikes Sold by Income Level:**
+
+The bar chart provided shows the number of bikes sold categorized by different income levels: 0-50K, 50K-100K, 100K-150K, and 150K+.
+
+**Observations:**
+
+-   The number of bikes sold to individuals in the 50K-100K income bracket is the highest among the categories displayed.
+
+-   The 0-50K and 100K-150K income brackets show a lower number of bikes sold compared to the 50K-100K bracket, but the sales are still substantial. Individuals in the highest income bracket (150K+) show the lowest number of bikes sold compared to other groups.
+
+**Insights:**
+
+-   The data suggests that middle-income earners (specifically those in the 50K-100K bracket) are the primary purchasers of bikes. This may reflect a combination of having disposable income and a lifestyle that includes biking, whether for commuting or recreation.
+
+-   Despite presumably having more disposable income, the highest earners (150K+) are buying fewer bikes, which could indicate that this demographic may have access to or preference for other modes of transportation or leisure activities.
+
+-   The lowest income group (0-50K) also represents a significant market segment, suggesting that bikes may be an essential mode of transportation for this group.
+
+**Further Analysis:**
+
+-   It would be useful to understand the types of bikes purchased across these income levels. For instance, are higher-income individuals buying more expensive bikes less frequently?
+
+-   I will need to investigate if there are any regional or demographic factors that may influence these trends.
+
+-   Also, I need to consider the impact of marketing efforts and sales channels on these figures, as there might be different preferences for how and where bikes are purchased across income levels.
+
+The bar chart effectively communicates where the bulk of bike sales are occurring by income level, which can inform targeted marketing and sales strategies. It's also important to consider the broader economic context, such as the cost of living or average income in the regions where these sales are taking place, to draw more nuanced conclusions.
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:

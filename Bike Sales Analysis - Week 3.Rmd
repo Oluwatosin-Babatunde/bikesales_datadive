@@ -1,0 +1,129 @@
+---
+title: "Bike Data Analysis - Week 3 |Group By and Probabilities"
+author: "Oluwatosin Agbaakin"
+date: "2024-01-23"
+output: html_document
+theme: cerulean
+---
+<style>
+p {
+  text-align: justify;
+}
+</style>
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Introduction:
+
+This analysis is on the bike dataset, which focuses on exploring relationships between different variables through grouped data frames, visualization, and hypothesis testing.
+
+I dived deep into individual rows of data, and investigated each row and group, looking into their probability, which can help in anomaly detection. I began by loading the necessary libraries and the dataset. Then, I inspected the dataset to fully understand its structure, variables, and initial statistics.
+
+## Data Loading:
+
+```{r}
+library(tidyverse)
+bike_data <- read.csv("bike_data.csv")
+head(bike_data)
+str(bike_data)
+summary(bike_data)
+```
+
+## Grouping and Summary:
+
+Here, I grouped the data by Marital Status and summarized the Age variable. I aim to understand the age distribution within each marital status category.
+
+```{r}
+group_by_marital <- bike_data %>%
+  group_by(Marital.Status) %>%
+  summarise(Average_Age = mean(Age, na.rm = TRUE))
+
+ggplot(group_by_marital, aes(x = `Marital.Status`, y = Average_Age)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Average Age by Marital Status")
+```
+
+From the visualization above, married individuals constitute the larger group (53.8%), while single individuals form the smaller group (46.2%). The average age is slightly higher in the married group compared to the single group.
+
+## **Grouping by Occupation and the Number of children:**
+
+In this section, I analyzed the number of children based on different occupations of the household.
+
+-   The largest group by occupation is the Professional with 27.6%, while the smallest is Manual with 11.9%.
+
+-   The Management group has the highest average number of children, while Manual and Clerical occupations have lower averages.
+
+I visualized the above figures and summary below:
+
+```{r}
+group_by_occupation <- bike_data %>%
+  group_by(Occupation) %>%
+  summarise(Average_Children = mean(Children, na.rm = TRUE))
+
+ggplot(group_by_occupation, aes(x = Occupation, y = Average_Children)) +
+  geom_bar(stat = "identity", fill = "tomato") +
+  labs(title = "Average Number of Children by Occupation") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## **Grouping by Regions and summarizing Cars:**
+
+This analysis focuses on the number of cars owned in different regions:
+
+-   North America is the largest region with 50.8%, while 'Pacific' has the smallest with 19.2%.
+
+-   On average, people from the Pacific region own more cars compared to the other regions.
+
+```{r}
+group_by_region <- bike_data %>%
+  group_by(Region) %>%
+  summarise(Average_Cars = mean(Cars, na.rm = TRUE))
+
+ggplot(group_by_region, aes(x = Region, y = Average_Cars)) +
+  geom_bar(stat = "identity", fill = "brown") +
+  labs(title = "Average Number of Cars by Region")
+```
+
+## Cross-Tabulation of Categorical Variables:
+
+I further explored the relationship between two categorical variables, 'Marital Status' and 'Occupation', to understand their interaction.
+
+```{r}
+marital_occupation_tab <- table(bike_data$`Marital.Status`, bike_data$Occupation)
+
+ggplot(as.data.frame(marital_occupation_tab), aes(Var1, Var2, fill = Freq)) +
+  geom_tile() +
+  labs(title = "Cross Tabulation of Marital Status and Occupation", x = "Marital Status", y = "Occupation")
+```
+
+## **Further Analysis:**
+
+-   The smallest probability groups identified (Single for Marital Status, Manual for Occupation, and Pacific for Region) could be subject to further investigation to understand why they are less represented.
+
+-   For instance, the higher number of cars in the Pacific region could be linked to regional characteristics like urbanization, public transport availability, or income levels.
+
+-   Additional analysis can be performed to see how these smallest groups relate to other variables in the dataset, like income or bike purchase decisions.
+
+# Conclusion:
+
+The above heatmap visualization shows the distribution of different occupation categories within marital status groups.
+
+-   It can be clearly observed from the heatmap that the most common occupation for both married and single individuals appears to be Professional as indicated by the darker shade.
+
+-   Clerical occupations are more common among single individuals compared to married individuals.
+
+-   Manual and Management occupations have a moderate representation across both marital statuses.
+
+-   Skilled Manual seems to have a slightly higher frequency among married individuals than single ones, as suggested by the color shading. In relation to the conclusion from the analyzed dataset above:
+
+In relation to the conclusion from the analyzed dataset above:
+
+-   The heatmap visually reinforces the quantitative findings from the data analysis. It shows which occupations are more or less common among different marital statuses.
+
+-   It helps in identifying patterns or trends in occupation with respect to marital status, such as which occupations are predominantly chosen by married or single individuals.
+
+-   The heatmap can support hypotheses regarding socio-economic behavior. For example, if Professional is the most common occupation among both married and single individuals, one might hypothesize that this occupation is a popular choice due to factors like job availability, job desirability, or income levels associated with Professional roles.

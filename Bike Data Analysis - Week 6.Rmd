@@ -1,0 +1,219 @@
+---
+title: "Bike Data Analysis - Week 6 | Confidence Intervals"
+author: "Oluwatosin Agbaakin"
+date: "2024-02-15"
+output: html_document
+theme: cerulean
+---
+<style>
+p {
+  text-align: justify;
+}
+</style>
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(tidyr)
+```
+
+## Introduction
+
+This week's data dive presents a comprehensive data analysis focused on understanding factors influencing bike purchases. I will explore various relationships within the Bike sale dataset, emphasizing the importance of data documentation, detailed analysis and referencing the documentation for the data that I am using. Through this analysis, I aim to uncover insights that can guide strategic decisions and highlight the value of rigorous data examination, which is a bit similar to last week's data dive.
+
+## Data Loading
+
+As usual, I will load the dataset and perform necessary pre-analysis steps to prepare the data for the data dive. The bike sale dataset is loaded below for my analysis, I had already loaded the various libraries I will be using for this analysis in the setup code chunk above.
+
+```{r}
+# Dataset loading
+bike_data <- read.csv("bike_data.csv")
+```
+
+## Data Cleaning and Transformation
+
+This step involves preparing the dataset for analysis by converting data types and creating new variables. The `Income` column is transformed from a string to a numeric type after removing the dollar sign and and commas. The `Commute Distance` is converted into an ordered factor to reflect the ordinal nature of commute lengths. `Purchased Bike` is re-factored from a categorical to a numeric binary variable to facilitate the correlation analysis.
+
+Lastly, `Income Level` is derived from income quartiles, creating an ordered factor that categorizes income into four levels: `Low`, `Medium`, `High`, and `Very High`. These transformations are crucial for enabling our statistical analysis and ensuring data types align with the analytic methods used.
+
+```{r}
+# Converting Income to numeric by removing the dollar sign and commas
+bike_data$Income <- as.numeric(gsub("\\$", "", gsub(",", "", bike_data$Income)))
+
+# Categorize 'Commute Distance' into ordered factor
+bike_data$`Commute.Distance` <- factor(bike_data$`Commute.Distance`, 
+                                   levels = c("0-1 Miles", "2-5 Miles", "5-10 Miles", "10+ Miles"),
+                                   ordered = TRUE)
+
+# Convert 'Purchased Bike' to numeric (1 for Yes, 0 for No)
+bike_data$`Purchased.Bike_Numeric` <- ifelse(bike_data$`Purchased.Bike` == "Yes", 1, 0)
+
+# Create an Income Level variable based on quartiles
+bike_data$Income_Level <- cut(bike_data$Income, 
+                              breaks = quantile(bike_data$Income, probs = c(0, 0.25, 0.5, 0.75, 1)),
+                              labels = c("Low", "Medium", "High", "Very High"),
+                              include.lowest = TRUE)
+```
+
+## Analysis of Variable Pairs
+
+I will now proceed to analyze the three pairs of variables, incorporating both created and existing variables, to explore their relationships and implications on bike purchasing behavior from our Bike sales dataset.
+
+### 1. Age and Income Level Relationship:
+
+```{r}
+# Plotting Age vs. Income
+ggplot(bike_data, aes(x = Age, y = Income)) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Age vs. Income Level", x = "Age", y = "Income")
+```
+
+From the visualization that we plotted above which depicts that of `Age vs. Income Level`, we can see that it appears not to be any clear linear relationship between Age and Income in the given dataset. Given this, we can then make some observations and insights as follows:
+
+1.  **Density of Data Points**: There is a dense cluster of data points across all ages with income levels mostly concentrated around the lower to middle-income range. This could suggest that a majority of individuals in this dataset fall within a similar income bracket regardless of age.
+2.  **Spread of Income Across Age**: Income levels are spread across the age axis, but there is no clear trend indicating that income increases or decreases with age. This lack of a trend could imply that factors other than age might be more influential in determining income levels in this dataset.
+3.  **Age Distribution**: The distribution of ages seems fairly uniform, with individuals of varying ages uniformly distributed. There is no indication of a significant concentration of individuals in any particular age group that could skew the analysis.
+4.  **Income Distribution**: Income levels show several horizontal lines of data points at certain income levels, which could indicate common income values, possibly due to standard wage levels or salary bands.
+5.  **Potential Ceiling Effect**: The flat lines at specific income levels might also suggest a ceiling effect where income does not increase beyond a certain point for some individuals, regardless of age.
+
+In terms of statistical analysis, we might need to delve deeper, possibly segmenting the data by other factors or conducting regression analysis while controlling for other variables to understand the complexities of the relationship between age and income.
+
+**OUTLIERS**: The observations on `Income vs Age Group` suggests a general increase in income with age. Outliers are present, we can start seeing them close to the 80 age mark (before and after), indicating individuals with significantly higher or lower incomes within age groups.
+
+### 2. Household Size and Bike Purchase Relationship:
+
+```{r}
+# Plotting Number of Children vs Bike Purchase
+ggplot(bike_data, aes(x = Children, y = `Purchased.Bike_Numeric`)) +
+  geom_jitter(alpha=0.5) +
+  theme_minimal() +
+  labs(title = "Number of Children vs Bike Purchase", x = "Number of Children", y = "Bike Purchase")
+```
+
+The plot `Number of Children vs Bike Purchase` displays the relationship between the number of children each family has and their decision to purchase a bike, with 1(YES) indicating a purchase and 0 (NO) indicating no purchase.
+
+Moving on, we can gather the following from the `Household Size and Bike Purchase Relationship Purchase` plot:
+
+1.  **No Strong Pattern**: There is no strong visual pattern suggesting a clear relationship between the number of children and bike purchase decisions. Individuals with any number of children appear just as likely to purchase a bike as not.
+
+2.  **Data Distribution**: The spread of data points across the `Number of Children` axis is fairly consistent, indicating that bike purchasing decisions are similarly distributed regardless of family size.
+
+3.  **Variability in Purchases**: There is considerable overlap in bike purchase decisions for individuals with 0 to around 4 children, suggesting that the number of children is not a determining factor in the decision to purchase a bike.
+
+However, we cannot come to a tangible conclusion without delving deep into our data, as this plot does not provide clear evidence of a direct or simple relationship between the number of children and the likelihood of purchasing a bike.
+
+**OUTLIERS**: Well, in this plot, there DO NOT appear to be any clear outlier in terms of the number of children; the data points are spread across a range but cluster around certain counts of children. So, there is no clear indicator that the number of children in a household significantly influences the likelihood of purchasing a bike; the distribution of purchases versus non-purchases seems relatively similar across different numbers of children.
+
+### 3. Commute Distance and Bike Purchase Decision:
+
+```{r}
+# Removing rows with missing values in 'Commute Distance' or 'Purchased Bike'
+bike_data_clean <- bike_data %>%
+  filter(!is.na(`Commute.Distance`) & !is.na(`Purchased.Bike_Numeric`))
+
+# Plotting with the cleaned data (This will be temporary)
+ggplot(bike_data_clean, aes(x = `Commute.Distance`, y = `Purchased.Bike_Numeric`)) +
+  geom_jitter(width = 0.2, height = 0.1) +
+  theme_minimal() +
+  labs(title = "Commute Distance vs Bike Purchase Decision", x = "Commute Distance", y = "Bike Purchase")
+```
+
+The plot above displays the distribution of individuals' decisions to purchase a bike against their commute distances. Each point represents an individual's decision at various commute distances (0-1 miles, 2-5 miles, and 5-10 miles).
+
+We can clearly deduce the following insights from the plot:
+
+1.  **Bike Purchase Distribution**: There appears to be a roughly equal distribution of bike purchase decisions across all commute distances. This indicates that the decision to purchase a bike might not be strongly dependent on how far an individual commutes.
+
+2.  **No Clear Trend**: There is no clear trend indicating that a particular commute distance category has a higher or lower likelihood of bike purchases. This lack of trend suggests that factors other than commute distance may have a more significant influence on the decision to purchase a bike.
+
+3.  **Data Spread**: The jitters in the plot helps to avoid over-plotting and shows the spread of data points within each commute distance category, indicating variability in bike purchase decisions among individuals with similar commutes.
+
+4.  **Commute Distance Ranges:** The `Commute Distance` variable has distinct groups, possibly discrete distances at which the data was recorded.
+
+**OUTLIERS**: Before discussing outliers, I managed to realize that the plot appears to show that as commute distance increases, the number of bike purchases decreases. To the more specific on the insights, let me discuss the following:
+
+-   **0-1 Miles**: This group has a higher proportion of bike purchases compared to non-purchases.
+-   **2-5 Miles**: Bike purchases appear less frequent than in the 0-1 miles group but still significant.
+-   **5-10 Miles**: The proportion of bike purchases drops further compared to shorter distances.
+
+Now, to the outliers, they DO NOT appear in this plot.
+
+## Correlation Analysis
+
+```{r}
+# Age vs Income Level
+suppressWarnings({
+  age_income_corr <- cor.test(~ Age + as.numeric(Income_Level), data = bike_data, method = "spearman")
+  print(age_income_corr)
+})
+
+# Household Size and Bike Purchase Relationship
+suppressWarnings({
+  children_bike_corr <- cor.test(bike_data$Children, bike_data$`Purchased.Bike_Numeric`, method = "spearman")
+  print(children_bike_corr)
+})
+
+# Make 'Commute Length' an ordered factor
+bike_data$`Commute.Distance` <- factor(bike_data$`Commute.Distance`, ordered = TRUE,
+                                     levels = c("0-1 Miles", "2-5 Miles", "5-10 Miles", "10+ Miles"))
+
+# Convert 'Commute Length' to a numeric vector
+bike_data$Commute.Distance_Numeric <- as.numeric(bike_data$`Commute.Distance`)
+suppressWarnings({
+  commute_bike_corr <- cor.test(bike_data$Commute.Distance_Numeric, bike_data$`Purchased.Bike_Numeric`, method = "spearman")
+  print(commute_bike_corr)
+})
+```
+
+## Correlation Analysis Interpretation
+
+1.  **Age vs Income Level**: The positive Spearman's rank correlation coefficient of approximately 0.185 indicates a weak positive relationship between age and income level. This suggests that as age increases, there's a slight tendency for income level to increase as well. The extremely low p-value suggests this observed relationship is highly significant, indicating a very low probability that this correlation occurred by chance.
+
+    It is quite reasonable to expect that individuals' income levels might increase with age due to factors like career progression, accumulation of experience, and advancements in positions that typically come with time in the workforce. However, the correlation is weak, suggesting that while there's a general trend of increasing income with age, the relationship is not strong. This implies other factors also play significant roles in determining an individual's income level beyond just age.
+
+2.  **Household Size and Bike Purchase Relationship**: This negative rank correlation coefficient suggests a weak inverse relationship between the household size and the decision to purchase a bike. Specifically, as the household increases, there is a slightly lower likelihood of purchasing a bike. The p-value indicates this finding is statistically significant, suggesting the observed relationship is unlikely due to random chance.
+
+    Why then does it make sense? If at all; we can say that households with more children might face different transportation needs or financial priorities, possibly leading to a reduced likelihood of investing in bicycles. The visualization likely showed a scattered distribution of bike purchases across different numbers of children, with no strong pattern but a slight trend indicating fewer bike purchases in larger families.
+
+3.  **Commute Distance and Bike Purchase Decision**: A negative correlation suggests a weak inverse relationship between commute length (when converted to a numeric scale obviously) and the decision to purchase a bike. This suggests that individuals with longer commutes are slightly less likely to purchase a bike. The p-value signifies that this relationship is statistically significant, albeit weak.
+
+    So, as mentioned above, it shows that longer commutes might be less conducive to biking, either due to the inconvenience of biking long distances or because longer commutes often involve highway travel or areas less accessible by bike. The visualization shows a broad spread of bike purchases across commute lengths, with a subtle decrease in bike purchasing as commute length increases.
+
+### Confidence Interval for Bike Purchases
+
+Let us assume that we are only interested in a 95% confidence interval for the proportion of individuals who purchased a bike. We can then get that outcome by running the below analysis:
+
+```{r}
+p_hat <- mean(bike_data$`Purchased.Bike_Numeric`)
+n <- length(bike_data$`Purchased.Bike_Numeric`)
+z <- qnorm(0.975) # Z-score for 95% confidence
+
+# Calculate standard error
+se <- sqrt(p_hat * (1 - p_hat) / n)
+
+# Confidence interval
+ci_lower <- p_hat - z * se
+ci_upper <- p_hat + z * se
+
+# Display the confidence interval
+ci_lower
+ci_upper
+```
+
+### Detailed Conclusion
+
+Based on the calculated confidence interval, we can conclude the following about the population:
+
+-   The true proportion of individuals in the population who have purchased a bike is estimated to lie within the range defined by the confidence interval (from ci_lower to ci_upper).
+-   If the confidence interval, for example, ranges from 0.45 to 0.55, we can be 95% confident that the true proportion of bike purchasers in the entire population falls within this range.
+-   A wider confidence interval might indicate a higher degree of uncertainty about the true proportion, which could be due to a smaller sample size or higher variability in the sample data.
+-   A confidence interval that does not include 0.5 (50%) might suggest a significant lean towards either purchasing or not purchasing bikes among the sampled individuals. For instance, if the entire confidence interval lies above 0.5, it suggests that more than half of the population sampled is inclined towards purchasing bikes.
+
+Finally in this week's data dive, the confidence interval provides valuable insight into the behavior of the population from which the sample was drawn, offering a range within which the true proportion of interest likely falls. This information is crucial for making informed decisions, understanding the population's tendencies, and guiding further research or policy decisions related to bike purchasing behaviors.
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.

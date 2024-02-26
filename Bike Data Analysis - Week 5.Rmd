@@ -1,0 +1,198 @@
+---
+title: "Bike Data Analysis - Week 5 | Documentation"
+author: "Oluwatosin Agbaakin"
+date: "2024-02-09"
+output: html_document
+theme: cerulean
+---
+<style>
+p {
+  text-align: justify;
+}
+</style>
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction to the Data Dive:
+
+This week's data dive is focused on exploring my usual dataset on bike purchases, I will be focusing on the importance of data documentation, which is the main task of this week's analysis, and making it as easy, and simple to read to anyone reading this week's R Markdown document.
+
+I will delve into specific columns that require documentation for clarity, identify elements that remain unclear even after consulting documentation, and visualize these findings to highlight potential issues.
+
+As required for each tasks, I described all the insights that was gathered, its significance, and every other questions that I have which might need to be further investigated. For each of the required tasks, I described all the insights I gathered.
+
+This R Markdown document delves laid emphasis on the critical role of documentation in data analysis. I aim to uncover the subtleties within the dataset that are only apparent upon reading the documentation, apart from this, I ensured to add as many as possible comments to my code chunks for the readability and comprehension of an average reader of R Markdown file. This document highlight areas where documentation might fall short, and explore the implications of these findings through visualization.
+
+## Libraries:
+
+Well, let me begin by loading the necessary R libraries I will be utilizing for the data manipulation and visualization.
+
+```{r}
+library (tidyverse) # For transforming, presenting, importing, tidying, etc.
+library(readr) # For reading the bike_data CSV file
+library(dplyr) # For data manipulation
+library(ggplot2) # For creating visualizations
+library(tidyr) # For data tidying
+library(lubridate) # For date and time manipulation
+library(stringr) # For string manipulation
+```
+
+## Data Loading and Preliminary Check:
+
+The Bike Dataset will be loaded next, and as usual it shows us initial look at data structure.
+
+```{r}
+bike_data <- read_csv("bike_data.csv", show_col_types = FALSE)
+glimpse(bike_data) # A quick look at my data structure
+```
+
+# Documentation Analysis
+
+-   **Unclear Columns Without Documentation**:
+
+a.  **Commute Distance**: This column uses ranges to denote how far individuals commute. Without documentation, the rationale behind these specific intervals is unclear.
+
+The major insight here explains these categories based on common commuting distances in urban areas, aimed at simplifying data analysis by reducing granularity.
+
+```{r}
+unique(bike_data$`Commute Distance`) #Exploring unique values in 'Commute Distance'
+```
+
+b\. **Income**: Formatted and stored in a string format for readability, but for us to achieve any reasonable calculations or aggregations, it needs to be converted into a numeric format.
+
+```{r}
+# Preprocessing Income for numerical analysis
+bike_data <- bike_data %>%
+  mutate(Income = str_remove(Income, "\\$"),
+         Income = str_replace_all(Income, ",", ""),
+         Income = as.numeric(Income))
+```
+
+**Further Explanation**: This code chunk performs a preprocessing step in the `Income` column in `bike_data` dataset. This is done to prepare my data for numerical analysis. Here's what each line of the code is intended to do:
+
+1.  **`mutate(Income = str_remove(Income, "\\$"))`**: This line is using the `str_remove` function from the `stringr` package to remove the dollar sign (`$`) from the `Income` column. The double backslashes `\\` are used to escape the dollar sign since it is a special character in regular expressions.
+
+2.  **`Income = str_replace_all(Income, ",", "")`**: After removing the dollar signs, this line is using the `str_replace_all` function to remove any commas from the `Income` column. This is commonly needed because numerical values formatted as text often use commas to separate thousands, which need to be removed before converting the text to a numeric type.
+
+3.  **`Income = as.numeric(Income)`**: Finally, this line converts the `Income` column from a character or string type to a numeric type using `as.numeric()`. This is necessary for any kind of numerical analysis, such as calculating means, sums, or running statistical models, because these operations cannot be performed on text data.
+
+Now, the use of the pipe operator `%>%` indicates that this code is using the `dplyr` package's syntax for data manipulation, which allows for chaining multiple operations.
+
+Why doing this? Well, as explained earlier, it is used for converting currency values stored as text into numeric values that can be used for calculations and analysis in our R environment. After this, I would now be able to perform various statistical analyses on the `Income` column, such as finding the average income, grouping incomes, summing incomes, etc.
+
+c\. **Age Brackets**: Age brackets are determined based on marketing segments, crucial for targeted advertising campaigns. The documentation specifies the exact age ranges these brackets correspond to.
+
+```{r}
+unique(bike_data$`Age Brackets`)
+```
+
+**Further Explanation**: This code chunk is using the `unique` function to display the distinct values within the `Age Brackets` column of the `bike_data` data frame. The output shows that there are three unique age categories represented in the dataset: "Middle Age", "Old", and "Adolescent". This information could be useful for segmenting the data for analysis by age group.
+
+## Ambiguities Even After Documentation:
+
+Even with my documentation above and beyond in this R Markdown document, the Occupation column's classifications may remain vague. The definitions of categories like "Skilled Manual" or "Professional" can be broad, potentially obscuring detailed analysis.
+
+It is very obvious that the occupation column still remains a broad category, with the data and documentation providing minimal clarification on the criteria used for the classification which may hinder detailed analysis. To make the occupation column more understandable, I will consider adding the following context:
+
+-   **Specific Criteria for Classification**: Clearly defining what each category represents. For instance, what job titles or roles are included in "Skilled Manual" or "Professional"? What is the range of income or education levels for these categories?
+
+-   **Examples of Occupations**: Providing examples of actual job titles that fall under each category. This helps to illustrate the types of occupations being grouped together.
+
+-   **Rationale for Grouping**: Explaining why certain occupations are categorized together. Is it based on skill level, education requirements, income bracket, industry, or another factor?
+
+-   **Data Source and Collection Method**: Now this is important, it should be clearly mentioned where the occupation data came from and how it was collected. Was it self-reported, assigned by an analyst, or by me? :-D, or probably coded based on a standard classification system like the Standard Occupational Classification (SOC) system? Context, context, and more context is vital.
+
+-   **Possible Implications of Ambiguity**: How the ambiguity in the current categorization could affect analysis or decision-making. What are the risks of over-generalization or misinterpretation?
+
+-   **Suggestions for Improvement**: As a data analyst, one of my core functions is offering solid and useful recommendations to stakeholders. I should find a lasting solution on how the occupation classification can be refined or subdivided for more precise analysis. Could additional data collection or a different classification system help? Well, yes! How? I have listed some of them above,
+
+Finally, you can agree with me that this 'troublesome' column can be problematic for detailed analysis, but by providing these additional details, I can enhance the clarity of the occupation column and support more nuanced analysis and interpretation of the data.
+
+## **Visualization: Highlighting Data Ambiguities**
+
+Let me highlight by visualizing our 'troublesome' column - the Occupation column, showing the potential classification issues as relates with bike purchase trends.
+
+```{r}
+bike_data$`Purchased Bike` <- as.factor(bike_data$`Purchased Bike`)
+ggplot(bike_data, aes(x = Occupation, fill = `Purchased Bike`)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Bike Purchases by Occupation", x = "Occupation", y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_text(aes(label = after_stat(count)), stat = "count", position = position_dodge(width = 0.9), vjust = -0.25) +
+  scale_fill_manual(values = c("No" = "blue", "Yes" = "darkgreen"), name = "Purchased Bike")
+```
+
+The visualization above attempts to show the distribution of bike purchases across different occupations, with a note on the potential ambiguity in occupation definitions.
+
+## Additional Visualization:
+
+I will create a graph to give us a quick glance in identifying purchase trend according to the income bracket:
+
+```{r}
+# Can we quickly notice a trend in the purchasing habit based on Income Bracket? Yes, of course!
+bike_data <- bike_data %>%
+  mutate(Income_Bracket = cut(Income,
+                              breaks = c(-Inf, 20000, 40000, 60000, 80000, Inf),
+                              labels = c("0-20k", "20k-40k", "40k-60k", "60k-80k", "80k+")))
+
+# Now, i will group by the new Income_Bracket column
+bike_data %>%
+  group_by(Income_Bracket) %>%
+  summarise(Count = n(), Purchases = sum(as.numeric(`Purchased Bike`))) %>%
+  ggplot(aes(x = Income_Bracket, y = Purchases)) +
+  geom_col() +
+  labs(title = "Bike Purchases by Income Bracket", x = "Income Bracket", y = "Number of Purchases")
+```
+
+# Further Insights for documentation:
+
+I plotted the graph "Income Bracket against Number of Purchases to gain the following insights:
+
+1.  **Income Bracket Distribution**: The 20k-40k income bracket has the highest number of purchases, followed by the 40k-60k, then 60k-80k, with 0-20k and 80k+ brackets having the fewest purchases.
+
+2.  **Purchasing Power**: This trend suggests middle-income brackets (20k-40k and 40k-60k) are more likely to purchase bikes compared to those in the lowest and highest income brackets. This could indicate that middle-income range have more discretionary spending power for items like bikes.
+
+3.  **Marketing Focus**: As this data is a representative of the broader market, this information could be used by bike retailers or manufacturers to target their marketing efforts more effectively. They should focus on 20k-40k and 40k-60k income brackets where the majority of purchases are made.
+
+4.  **Economic Factors**: There could be economic factors at play influencing bike purchases in this dataset. We can see that individuals in lower income brackets may prioritize essential expenses over discretionary ones like bike purchases. Conversely, those in the highest income bracket might prefer more expensive forms of transportation or leisure, thus fewer bike purchases.
+
+5.  **Further Analysis**: While the above graph provides an initial insight into purchasing habits by income, it would be beneficial to explore further. For example, understanding the types of bikes purchased, the geographical distribution of these purchases, and any seasonal trends could add depth to the analysis.
+
+6.  **Data Quality and Representativeness**: It is also important to consider the quality and representativeness of the data. Is this a complete dataset? Is it biased in any way? Does it represent a larget population of bike owners? If yes, how was it collected or updated.
+
+7.  **Socioeconomic Implications**: The insights could reflect broader socioeconomic trends, such as the accessibility and affordability of biking as a mode of transportation or leisure activity among different income groups.
+
+In summary, the graph provides a starting point for understanding bike purchasing patterns across different income levels, offering valuable information for business decisions and potential socioeconomic analysis for manufactures and retailers.
+
+## Insights and Significance:
+
+The analysis underscores the importance of thorough documentation for data understanding and the challenges of ambiguous categorizations. Detailed documentation helps in accurately interpreting data and ensuring robust analysis for the analysis as well as whoever that glances at the analysis.
+
+## Risks and Mitigation Strategies:
+
+**Risks**: Misinterpretation due to unclear categorizations.
+
+**Mitigation**: Seeking additional clarification or documentation on ambiguous columns. When unavailable, we should consider sensitivity analyses to understand how different interpretations affect outcomes.
+
+## Next Steps:
+
+These two factors could be leveraged on solve the problem we discussed earlier:
+
+-   Seeking additional external data to clarify ambiguous occupation categories.
+
+-   Conducting a more detailed analysis of income levels and bike purchase trends.
+
+## Conclusion and Further Questions
+
+This week's data dive has highlighted the importance of consulting documentation when analyzing data, the challenges posed by ambiguities within the data, and the implications these may have on analysis outcomes. Further investigation could explore the impact of additional variables on bike purchases, such as regional differences, weather, economical differences, demography, or the effect of having children.
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:

@@ -1,0 +1,383 @@
+---
+title: "Bike Data Analysis - Week 4 | Sampling and Drawing Conclusions"
+author: "Oluwatosin Agbaakin"
+date: "2024-02-05"
+output: html_document
+theme: cerulean
+---
+<style>
+p {
+  text-align: justify;
+}
+</style>
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction:
+
+This analysis is primarily focused on thinking critically about what might go wrong when it comes to make conclusions about my data.
+
+With a comprehensive analysis, I was able to isolate a collection of 5 random samples, Scrutinize the subsamples, and consider how these investigations affects how I might draw conclusions about the data in the future.
+
+For each of the required tasks, I described all the insights I gathered, its significance, and every other questions that I have which might need to be further investigated. I tried to the best of my ability to scrutinize and maximize the statistical tools of R to conduct a thorough analysis which we shall discuss in this data dive.
+
+## Loading and Inspecting the Dataset:
+
+The first step is to load the dataset to be analyzed for this week's data dive.
+
+Let us start by loading the dataset and inspecting its structure to understand what types of data we will be working with in this week's data dive. This step will inform us how we should approach the sampling and analysis phases. The dataset consists of 1,000 entries with 14 columns, encompassing both categorical and numeric data types:
+
+**Categorical Variables:**
+
+-   *Marital Status, Gender, Income, Education, Occupation, Home Owner, Commute Distance, Region, Age Brackets, Purchased Bike.*
+
+**Numeric Variables:**
+
+-   *ID, Children, Cars, Age.*
+
+```{r}
+library (tidyverse)
+bike_data <- read.csv("bike_data.csv")
+head(bike_data)
+summary(bike_data)
+df_1 <- bike_data
+```
+
+### Initial Observations:
+
+The dataset includes personal and demographic information, potentially to analyze factors influencing bike purchases. Numeric variables include straightforward counts (e.g., Children, Cars and Age), which could be used for quantitative analysis. Categorical variables cover a wide range of attributes, from income brackets and education levels to marital status and whether or not a bike was purchased.
+
+### Generating Random Samples:
+
+Now, I will proceed to generate five random subsamples from the dataset, and analyze the subsamples for insights. Each sample will contain about 50% of the original dataset's observations, selected with replacement. This step simulates the act of collecting data from a larger population.
+
+For each subsample, I will perform a variety of analyses to explore differences, anomalies, consistencies, and to understand variability and underlying patterns.
+
+```{r}
+set.seed(42)
+n <- nrow(bike_data)
+sample_size <- round(n * 0.5)
+
+df_list <- lapply(1:5, function(i) {
+  bike_data[sample(n, sample_size, replace = TRUE), ]
+})
+names(df_list) <- paste0("df_", 1:5)
+```
+
+The above is used to generate five random subsamples from a dataset, each approximately 50% of the size of the original dataset. As we can see, this is a preparatory step in data analysis, and it sets up for subsequent analysis by creating datasets that simulate repeated sampling from a population.
+
+This crucial steps will prepare the ground for further exploratory data analysis (EDA), where I would investigate each subsample to uncover trends, anomalies, and consistencies.
+
+### Sample 1 Analysis:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+df_1_summary <- df_list[[1]] %>%
+  group_by(Gender, Marital.Status) %>%
+  summarise(Average_Age = mean(Age, na.rm = TRUE),
+            Count = n(),
+            .groups = 'drop')
+
+ggplot(df_1_summary, aes(x = Gender, y = Average_Age, fill = Marital.Status)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(title = "Average Age by Gender and Marital Status in Sample 1")
+```
+
+From sample 1, where we visualize the average age by gender and marital status for a subsample, we can see the following insights in alignment with the data dive objectives:
+
+-   The average age for both males and females is displayed, further broken down by marital status (married vs. single).
+-   For both genders, married individuals appear to have a higher average age than single individuals.
+-   The average age of married males seems to be the highest among all the groups shown in the chart.
+-   Female and male singles have closer average ages, indicating less variation in age within single individuals across genders.
+
+The visualization provides a clear comparison of average ages within gender and marital status groups, suggesting that marital status may be associated with age, with married individuals being older on average. This could inform further analysis or targeting strategies for products or services that are age-specific or marital status-specific.
+
+### Sample 2 Analysis:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+df_2_summary <- df_list[[2]] %>%
+  group_by(Gender, Home.Owner) %>%
+  summarise(Average_Age = mean(Age, na.rm = TRUE),
+            Count = n(),
+            .groups = 'drop')
+         
+         
+ggplot(df_2_summary, aes(x = Gender, y = Average_Age, fill = Home.Owner)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(title = "Average Age by Gender and Home Owner in Sample 2")
+```
+
+We can derive the follwoing insights from sample 2:
+
+-   For both genders, homeowners are older on average compared to non-homeowners.
+-   The average age of male homeowners appears to be the highest among the groups.
+-   The difference in average age between homeowners and non-homeowners seems more pronounced for males than for females.
+
+This suggests that home ownership correlates with age in this subsample, with older individuals being more likely to own a home. These findings could be relevant for market analysis, policy-making, or financial services targeting homeowners.
+
+### Group Comparisons:
+
+Here I will use 'group_by' and 'summarise' to compare groups within each subsample. I am looking at analyzing differences in bike purchase rates by gender, commute distance and home owners.
+
+```{r}
+df_1 %>%
+  group_by(Gender) %>%
+  summarise(Count = n(),
+            `Bike Purchased` = sum(`Purchased.Bike` == "Yes"))
+```
+
+From the tibble above, we can derive the following insights:
+
+-   The data is grouped by gender, showing the count of individuals and the number of those who have purchased a bike.
+
+-   There are 239 females and 261 males in this subsample.
+
+-   Out of these, 115 females and 137 males have purchased bikes.
+
+-   This suggests that, within this subsample, a slightly higher number of males have purchased bikes compared to females.
+
+-   However, to know the real-time proportions in relation to the total counts and to conclude if one gender is more likely to purchase bikes than the other, we would need to calculate the purchase rates (i.e., Bike Purchased / Count) for each gender.
+
+To arrive at this, we would calculate the proportion for each gender as follows:
+
+```{r}
+df_1 %>% group_by(Gender) %>% summarise(Count = n(), Bike_Purchased = sum(Purchased.Bike == "Yes"), Purchase_Rate = Bike_Purchased / Count)
+```
+
+The tibble above has provided the rate at which each gender purchases bikes, giving a more informative insight into purchasing behavior by gender within this subsample
+
+From the table output in the image, which shows bike purchase rates by commute distance in `df_1`, we can derive the following insights:
+
+-   The highest number of bikes purchased (107) corresponds to individuals with a commute distance of "0-1 Miles."
+-   As the commute distance increases, the number of bikes purchased generally decreases, with the fewest bikes (18) purchased by those commuting "Over 10 Miles."
+-   The group with the shortest commute distance ("0-1 Miles") not only has the most bike purchases but also the highest count of individuals (187).
+-   Conversely, the group with the longest commute distance ("Over 10 Miles") has the lowest count of individuals (53) and the lowest number of bikes purchased (18).
+
+### Analyzing Bike Purchase rate by Commute Distance in df_1:
+
+The data suggests a trend where people with shorter commute distances are more likely to purchase bikes, which implies that bikes are preferred for shorter commutes. For a more in-depth analysis, I will calculate the purchase rate (number of purchases divided by count) for each commute distance category.
+
+```{r}
+df_1 %>%
+  group_by(Commute.Distance) %>%
+  summarise(Count = n(),
+            `Bike Purchased` = sum(`Purchased.Bike` == "Yes"))
+```
+
+### Visualization for Bike Purchase rate by Commute Distance:
+
+```{r}
+
+library(plotly)
+bike_purchase_summary <- df_1 %>%
+  group_by(Commute.Distance) %>%
+  summarise(Bike_Purchased = sum(`Purchased.Bike` == "Yes")) %>%
+  mutate(Proportion = Bike_Purchased / sum(Bike_Purchased)) 
+
+fig <- plot_ly(bike_purchase_summary, labels = ~ Commute.Distance, values = ~Proportion, type = 'pie', textinfo = 'label+percent',
+               insidetextorientation = 'radial')
+
+fig <- fig %>% layout(showlegend = TRUE)
+fig
+```
+
+### Analyzing Bike Purchase rate by home owners in df_1:
+
+Let us further analyse and confirm the number of bikes purchased categorized by home owners.
+
+```{r}
+df_1 %>%
+  group_by(Home.Owner) %>%
+  summarise(Count = n(),
+            `Bike Purchased` = sum(`Purchased.Bike` == "Yes"))
+```
+
+We can observe the following:
+
+-   Out of 346 individuals who own a home, 173 have purchased a bike.
+
+-   Among the 154 individuals who do not own a home, 79 have purchased a bike.
+
+In short, a greater total number of homeowners have purchased bikes compared to non-homeowners. However, there are more homeowners in this subsample, so without calculating the purchase rates, we cannot say for certain if homeowners are more likely to purchase bikes than non-homeowners.
+
+### Visualization for Bike Purchase rate by Home Owners:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+bike_purchase_summary <- df_1 %>%
+  group_by(Home.Owner) %>%
+  summarise(Count = n(),
+            Bike_Purchased = sum(`Purchased.Bike` == "Yes")) %>%
+  mutate(Purchase_Rate = Bike_Purchased / Count) 
+
+
+ggplot(bike_purchase_summary, aes(x = Home.Owner, y = Purchase_Rate, fill = Home.Owner)) +
+  geom_bar(stat = "identity")
+  labs(title = "Bike Purchase Rate by Home Ownership",
+       x = "Home Owner",
+       y = "Purchase Rate") +
+  theme_minimal() 
+```
+
+### Analyzing the Subsamples
+
+#### Comparing Differences:
+
+I will examine the differences in key metrics across subsamples here for futher insights, (e.g., average age, income levels, bike purchase rates).
+
+```{r}
+summary(df_list[[1]]$Age)
+table(df_list[[1]]$`Purchased Bike`) 
+```
+
+From the summary table, we can arrive at the following insights:
+
+-   The minimum age in the subsample is 25 years old.
+
+-   The first quartile (25th percentile) is 35 years, indicating that 25% of individuals are younger than 35.
+
+-   The median age is 42 years, i.e. half of the individuals are younger than 42 and half are older.
+
+-   The mean (average) age is approximately 43.84 years, which is slightly higher than the median, suggesting a slight skew to the right (older ages).
+
+-   The third quartile (75th percentile) is 51 years, indicating that 75% of individuals are younger than 51.
+
+-   The maximum age in the subsample is 89 years old.
+
+This summary provides a sense of the age distribution within the first subsample of our data. It indicates that the subsample has a wide age range from young adults to older individuals, with a median age in the early 40s.
+
+### Frequency table for binary variable like Purchased Bike:
+
+This table would normally tell us how many individuals in the subsample purchased a bike (indicated as "Yes") versus how many did not buy (indicated as "No"). It would provide insight into the proportion of bike purchasers in this particular subset of data, which could be compared with other subsets or the entire dataset to look for patterns or anomalies.
+
+```{r}
+table(df_list[[1]]$`Purchased.Bike`)
+```
+
+#### Identifying Anomalies:
+
+We will look for anomalies within each subsample. This could be unusually high or low averages, or unexpected distributions in categorical variables.
+
+```{r}
+boxplot(df_list[[1]]$Age) # Identify outlier ages
+```
+
+The boxplot generated from the Age data in one of the subsamples provides a visual means to identify potential outliers within the age data.
+
+From the boxplot, we can observe the following:
+
+-   The bulk of the data (the interquartile range, or IQR, which is the range of the box) seems to be roughly between the mid-30s and the early 50s. This indicates the middle 50% of the age data in this subsample.
+-   The median (indicated by the line within the box) is around the early 40s, suggesting that half the individuals are younger and half are older than this age in this subsample.
+-   There are some potential outliers (indicated by the circles above the upper whisker of the boxplot), which are individuals significantly older than the rest of the population in the subsample. These points lie outside the typical range (1.5 \* IQR above the third quartile).
+-   The exact ages of these outliers appear to be in the late 70s to near 90, which are considerably higher than the rest of the data points.
+
+The insights here suggest that while the subsample has a central age group from mid-30s to early 50s, there are also a few much older individuals present in this subsamples. These could be potential anomalies that needs further investigation to determine if they are errors, or if they represent a significant but small segment of the population.
+
+Understanding the characteristics of these outliers could be important for our specific analyses, such as market segmentation or targeted advertising.
+
+### Consistency Across Subsamples:
+
+We will check for consistent patterns or distributions across the subsamples, such as similar distributions of genders or marital statuses.
+
+```{r}
+lapply(df_list, function(df) prop.table(table(df$Gender)))
+```
+
+The consistency analysis shows the proportion of each gender across five different subsamples from our data. I used the table function within lapply to create a frequency table of the gender variable in each subsample, and the prop.table helped me in converting these frequencies into the required proportions.
+
+**With the analysis, we can see the following:**
+
+-   In all five subsamples, the proportion of males and females is relatively balanced.
+-   The proportions fluctuate slightly from one subsample to another but remain close to an even split (around 0.5 for both genders).
+-   The largest discrepancy observed is in the fifth subsample, where females comprise approximately 53.6% and males 46.4%.
+
+**Insights:**
+
+-   Gender distribution is fairly even in the dataset, indicating that there is no significant skew towards one gender in the subsamples.
+-   The slight fluctuations in gender proportions across subsamples reflect natural variability expected from random sampling.
+
+**Significance:**
+
+-   Such balance in gender distribution might not necessitate gender-specific strategies as these findings represent the larger population.
+-   Future analyses that segment by gender may expect to find similar sizes of groups, which is useful for comparative studies between male and female subsets.
+
+### Monte Carlo Simulations
+
+The objective of this Monte Carlo Simulation is to estimate the probability of purchasing a bike based on varying levels of income, age, and car ownership.
+
+### Defining Simulation Parameters:
+
+First, we will define some assumptions based on our dataset, such as ranges of ages, incomes, and number of cars. For simplicity, let's categorize income into three levels (Low, Medium, High), age into two broad groups (Young, Old), and car ownership as either 0, 1, or 2+ cars.
+
+### Creating a Simulation Function
+
+This function will simulate the buying decision (Yes or No) based on input factors. We'll use simplified probabilities for the demonstration.
+
+To incorporate Monte Carlo simulations, I will focus on a specific aspect, in this case I will look at estimating the proportion of bike purchases under different conditions.
+
+```{r}
+set.seed(42)
+sim_results <- replicate(1000, {
+  sample_data <- bike_data[sample(n, sample_size, replace = TRUE), ]
+  mean(sample_data$Purchased.Bike == "Yes")
+})
+
+hist(sim_results, breaks = 30, main = "Simulation Results: Proportion of Bike Purchases")
+```
+
+### Findings, Insights and Observations:
+
+Based on the analysis and histogram about the Monte Carlo simulation output, here's how I can interpret the findings and insights:
+
+-   **Central Tendency**: The histogram appears to be centered around a proportion of bike purchases that might be somewhere between 0.48 and 0.52. This suggests that, on average, approximately 48% to 52% of the simulated individuals purchased a bike under the conditions tested in the simulation.
+
+-   **Variability**: There is a spread of proportions around this central cluster, indicating variability in the bike purchase rate across different simulated samples. The width of the distribution shows the degree of uncertainty or variability in the proportion of bike purchases.
+
+-   **Simulation Assumptions**: The shape and spread of the histogram reflect the assumptions made in the simulation model. Due to the fact that the simulation is based on sampling with replacement from the original dataset, the histogram represents the variability that could be expected due to random sampling.
+
+-   **Range of Outcomes**: The x-axis of the histogram shows a range of proportions from around 0.4 to just over 0.55. This range encompasses all the simulated scenarios, providing an idea of the minimum and maximum proportions of bike purchases I might expect to see.
+
+-   **Potential Skewness**: If the histogram is not symmetric and shows a skew to the left or right, it could indicate that the proportion of bike purchases is more likely to be higher or lower than the average. This would suggest a bias in the factors influencing bike purchases.
+
+-   **Practical Application**: These insights can be used to estimate the likelihood of a certain proportion of bike purchases in the real world, given the conditions reflected in the simulation. As this dataset and the simulation are representative of the actual population, this information could be useful for planning marketing campaigns or stock management.
+
+-   **Further Analysis**: The results could lead to me further questions, such as what factors are causing the variability in bike purchase rates, and whether there are demographic or other predictors that significantly influence the likelihood of purchasing a bike. It may also prompt me into further investigation into stratifying the simulation by different groups (e.g., age, income level) to see if variability differs within subgroups.
+
+Finally, the insights from this simulation are only as good as the data and assumptions upon which the simulation is based. The simulation assumes that the existing dataset accurately represents the population and that the factors leading to bike purchases are consistent over time.
+
+### Conclusions and Future Data Considerations
+
+**Sample Variability**: The data dive underscores the variability inherent in sampling. Even with a consistent population, different samples can yield different insights, highlighting the need for careful consideration of sampling methods in research.
+
+**Anomaly Detection**: Identifying anomalies across subsamples emphasizes the importance of robust data cleaning and the need to investigate outliers for meaningful analysis.
+
+**Consistency and Stability**: Observing consistent trends across multiple samples lends confidence to those findings, suggesting they are representative of the broader population.
+
+**Further Investigations** (**External Factors)**: Anomalies and inconsistencies might prompt further investigation into external factors influencing the data, such as seasonal effects on bike purchases or the impact of economic conditions on consumer behavior.
+
+**Sampling Bias**: Differences among subsamples raise questions about potential sampling bias and its impact on data analysis. Investigating the sampling method and its representativeness of the population becomes crucial.
+
+**Deeper Demographic Analysis**: Consistent demographic profiles across subsamples suggest further exploration into how these characteristics influence bike purchasing behavior.
+
+**Future Data Conclusions**: This data dive analysis teaches the importance of multiple sampling and analysis rounds to understand data variability and confirm findings. It also highlights the critical role of considering both categorical and continuous data types in comprehensive data analysis.
+
+Going forward, drawing conclusions from similar data will require careful consideration of sample selection, anomaly investigation, and the stability of observed trends. Additionally, recognizing the influence of external factors and potential biases is crucial for accurate data interpretation.
+
+By conducting such a detailed analysis, I would gain a nuanced understanding of my dataset, enabling informed decision-making and hypothesis generation for future data dive and research.
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
